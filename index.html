@@ -32,7 +32,7 @@
             background-attachment: fixed;
         }
 
-        h1, h2, h3, .font-display {
+        h1, h2, h3, h4, .font-display {
             font-family: 'Fredoka', sans-serif;
         }
 
@@ -74,12 +74,21 @@
             animation: float 4s ease-in-out infinite;
         }
 
+        /* Glass Effect */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        
         .glass-modal {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
-        
+
         input:focus {
             outline: none;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);
@@ -92,9 +101,21 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- ICONS ---
-        const IconWrapper = ({ children, size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        // --- ICONS (SAFE VERSION) ---
+        const IconWrapper = ({ children, size = 24, className = "", ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+                {...props}
+            >
                 {children}
             </svg>
         );
@@ -115,7 +136,7 @@
         const Trophy = (p) => <IconWrapper {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></IconWrapper>;
         const Check = (p) => <IconWrapper {...p}><polyline points="20 6 9 17 4 12"/></IconWrapper>;
         const Clock = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconWrapper>;
-        const XCircle = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconWrapper>;
+        const X = (p) => <IconWrapper {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></IconWrapper>;
 
         // --- DATA ---
 
@@ -243,43 +264,6 @@
 
         // --- COMPONENTS ---
 
-        // Web Audio API Sound Effects
-        const playSound = (type) => {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            if (type === 'correct') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.5);
-            } else if (type === 'wrong') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.3);
-            } else if (type === 'draw') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(400, ctx.currentTime);
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.1);
-            }
-        };
-
         const MusicPlayer = () => {
             const [isPlaying, setIsPlaying] = useState(false);
             const audioRef = useRef(null);
@@ -335,6 +319,36 @@
                 </div>
             </div>
         );
+
+        // --- NEW: TURN CHANGE MODAL (UPDATED) ---
+        const TurnChangeModal = ({ player, onConfirm }) => {
+            // Get player's hero image if available, else null
+            const heroCard = player.board[0];
+            const heroImg = heroCard ? heroCard.imgUrl : null;
+
+            return (
+                 <div className="fixed inset-0 z-[90] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-bounce-in">
+                    <div className={`glass-panel p-8 rounded-[2rem] max-w-sm w-full text-center border-4 ${player.color.split(' ')[0]}`}>
+                        <h2 className="text-3xl font-black text-white mb-2 font-display drop-shadow-md">GILIRAN</h2>
+                        <h3 className="text-4xl font-black text-yellow-400 mb-6 font-display drop-shadow-md">{player.name}</h3>
+                        
+                        <div className="flex justify-center mb-8">
+                            <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm border-4 border-white/50 animate-pulse w-32 h-32 flex items-center justify-center overflow-hidden shadow-2xl">
+                                {heroImg ? (
+                                    <img src={heroImg} alt="Hero Avatar" className="w-full h-full object-cover rounded-full" />
+                                ) : (
+                                    <User size={64} className="text-white" />
+                                )}
+                            </div>
+                        </div>
+                        
+                        <button onClick={onConfirm} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-2xl text-xl shadow-xl transition-transform hover:scale-105 active:scale-95 w-full">
+                            SIAP!
+                        </button>
+                    </div>
+                </div>
+            );
+        };
 
         // --- DRAWN CARD PREVIEW MODAL ---
         const DrawnCardPreview = ({ card, onClose, onDiscard, onKeep }) => {
@@ -498,6 +512,65 @@
             );
         };
 
+        // --- TUTORIAL SCREEN COMPONENT ---
+        const TutorialScreen = ({ onBack }) => (
+            <div className="h-full flex flex-col items-center justify-center p-4">
+                <div className="glass-panel p-8 rounded-[2rem] shadow-2xl max-w-4xl w-full border-4 border-white/50 animate-bounce-in overflow-y-auto max-h-[90vh] custom-scrollbar">
+                    <div className="flex justify-between items-center mb-6 border-b border-indigo-200 pb-4">
+                        <h2 className="text-4xl font-black text-indigo-900 font-display">CARA BERMAIN</h2>
+                        <button onClick={onBack} className="p-2 hover:bg-white/50 rounded-full transition-colors"><X size={32} className="text-indigo-900"/></button>
+                    </div>
+                    
+                    <div className="space-y-6 text-slate-800">
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">1</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Persiapan Agen</h3>
+                                <p>Pilih jumlah pemain (1-4). Setiap pemain akan mendapatkan <strong>1 Kartu Hero secara acak</strong> di awal permainan. Papan pemainmu terdiri dari slot Hero, Nilai, dan 4 Sikap.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">2</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Misi Utama</h3>
+                                <p>Tugasmu adalah melengkapi set integritas sesuai dengan Hero yang kamu miliki. Cari <strong>1 Kartu Nilai</strong> dan <strong>4 Kartu Sikap</strong> yang warnanya sama dengan Hero-mu.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">3</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Giliran & Waktu</h3>
+                                <p>Setiap giliran, ambil 1 kartu dari Dek Tertutup atau Tumpukan Terbuka. Waktu bermain adalah <strong>10 Menit</strong>.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">4</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Kartu Khusus</h3>
+                                <ul className="list-disc ml-5 mt-1 space-y-1">
+                                    <li><strong>Jenis Korupsi (Merah):</strong> Jika terambil, kartu akan menumpuk di area atas. Semua pemain kena penalti <strong>-20 Poin</strong>.</li>
+                                    <li><strong>Lawan Korupsi (Ungu):</strong> Jika terambil, kartu menumpuk di area atas. Kamu dapat bonus <strong>+20 Poin</strong>.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                         <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">5</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Pemenang</h3>
+                                <p>Pemain pertama yang melengkapi papannya menang! Jika waktu habis, pemain dengan skor tertinggi menang.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onClick={onBack} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg mt-8 text-xl transition-transform hover:scale-[1.02]">KEMBALI</button>
+                </div>
+            </div>
+        );
+
         // --- GAME LOGIC ---
 
         const HakiGame = () => {
@@ -516,8 +589,46 @@
             const [previewCard, setPreviewCard] = useState(null);
             const [warningMessage, setWarningMessage] = useState(null);
             const [timeLeft, setTimeLeft] = useState(600); // 10 Minutes
+            const [isTurnModalOpen, setIsTurnModalOpen] = useState(false);
             
             const [globalSlots, setGlobalSlots] = useState({ corruption: [], counter: [] });
+
+            // Sound Effects
+            const playSound = (type) => {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'draw') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                }
+            };
 
             useEffect(() => {
                 let timer;
@@ -635,6 +746,7 @@
                 setTimeLeft(600); 
                 setMessage(`Giliran ${initPlayers[0].name}: Cari Kartu Nilai & Sikap!`);
                 setGameState('PLAY');
+                setIsTurnModalOpen(true); // Open first turn modal
             };
 
             const nextTurn = () => {
@@ -642,6 +754,32 @@
                 setTurn(nextP);
                 setPhase('DRAW');
                 setMessage(`Giliran ${players[nextP].name}: Ambil Kartu!`);
+                setIsTurnModalOpen(true); // Trigger modal
+            };
+
+            const drawRandomCardWithWeights = (availableDeck) => {
+                if (availableDeck.length === 0) return null;
+
+                const getCardsByType = (type) => availableDeck.filter(c => c.type === type);
+                
+                const r = Math.random() * 100;
+                let targetType = '';
+
+                if (r < 5) targetType = CARD_TYPES.HERO; 
+                else if (r < 15) targetType = CARD_TYPES.CORRUPTION;
+                else if (r < 25) targetType = CARD_TYPES.COUNTER;
+                else if (r < 50) targetType = CARD_TYPES.VALUE;
+                else targetType = CARD_TYPES.ATTITUDE;
+
+                const candidates = getCardsByType(targetType);
+                
+                if (candidates.length > 0) {
+                    const pickedIndex = Math.floor(Math.random() * candidates.length);
+                    return candidates[pickedIndex];
+                } else {
+                    const fallbackIndex = Math.floor(Math.random() * availableDeck.length);
+                    return availableDeck[fallbackIndex];
+                }
             };
 
             const drawCard = (source) => {
@@ -655,10 +793,12 @@
                         setMessage("Dek dikocok ulang...");
                         return;
                     }
+                    
                     const newDeck = [...deck];
                     card = newDeck.shift();
                     setDeck(newDeck);
                     playSound('draw');
+
                 } else {
                     card = source;
                     setDiscardPile(discardPile.filter(c => c.uniqueId !== card.uniqueId));
@@ -676,7 +816,7 @@
                     setGlobalSlots(prev => ({ ...prev, corruption: [card, ...prev.corruption] }));
                     const updatedPlayers = players.map(p => ({ ...p, score: p.score - 20 }));
                     setPlayers(updatedPlayers);
-                    setMessage(`⚠️ KORUPSI: ${card.title}! KEKURANGAN POIN (-20)!`);
+                    setMessage(`⚠️ KORUPSI: ${card.title}! Semua pemain -20 Poin.`);
                     playSound('wrong');
                     setTimeout(() => {
                         nextTurn(); 
@@ -689,7 +829,7 @@
                     const updatedPlayers = [...players];
                     updatedPlayers[turn].score += 20;
                     setPlayers(updatedPlayers);
-                    setMessage(`🛡️ LAWAN KORUPSI! ${players[turn].name} DAPAT POIN (+20)!`);
+                    setMessage(`🛡️ LAWAN KORUPSI! ${players[turn].name} +20 Poin.`);
                     playSound('correct');
                     setTimeout(() => {
                         nextTurn(); 
@@ -714,17 +854,23 @@
                 let error = null;
 
                 if (slotIndex === 0) {
+                    // HERO SLOT: Allow overwrite if it's a Hero card
                     if (holdingCard.type !== CARD_TYPES.HERO) {
                         error = "Slot 1 khusus HERO!";
                     }
+                    // No error for overwriting existing hero, allowing the switch
                 } else if (slotIndex === 1) {
+                    // VALUE SLOT
                     if (!board[0]) error = "Pasang HERO dulu!";
                     else if (holdingCard.type !== CARD_TYPES.VALUE) error = "Slot 2 khusus Kartu NILAI!";
                     else if (board[0].dimension !== holdingCard.dimension) error = "Warna/Nilai tidak cocok dengan Hero!";
+                    // Allow overwrite, no "already filled" error
                 } else {
+                    // ATTITUDE SLOTS
                     if (!board[1]) error = "Pasang Kartu NILAI dulu!";
                     else if (holdingCard.type !== CARD_TYPES.ATTITUDE) error = "Slot ini khusus Kartu SIKAP!";
                     else if (board[0].dimension !== holdingCard.dimension) error = "Warna Sikap tidak cocok dengan Hero!";
+                    // Allow overwrite
                 }
 
                 if (error) {
@@ -801,42 +947,61 @@
                         />
                     )}
 
+                    {isTurnModalOpen && (
+                        <TurnChangeModal 
+                            player={players[turn]} 
+                            onConfirm={() => setIsTurnModalOpen(false)}
+                        />
+                    )}
+
                     {gameState === 'INTRO' && (
                         <div className="h-full flex flex-col items-center justify-center p-4">
-                            <div className="bg-white/90 backdrop-blur-xl p-10 rounded-[3rem] shadow-2xl text-center max-w-4xl border-4 border-white/50 animate-bounce-in overflow-y-auto max-h-[90vh] custom-scrollbar">
-                                <div className="flex justify-center mb-6">
-                                    <img src="https://i.imgur.com/hHQGqXf.png" alt="Logo HAKI" className="w-40 h-auto drop-shadow-xl animate-float" />
+                            <div className="glass-panel p-10 rounded-[3rem] shadow-2xl text-center max-w-6xl w-full animate-bounce-in overflow-y-auto max-h-[90vh] custom-scrollbar relative flex flex-col md:flex-row gap-8 items-center">
+                                <div className="flex-1 flex flex-col items-center justify-center">
+                                    <img src="https://i.imgur.com/hHQGqXf.png" alt="Logo HAKI" className="w-64 h-auto drop-shadow-xl animate-float mb-6" />
+                                    <h1 className="text-6xl md:text-8xl font-display font-black text-indigo-900 mb-2 tracking-tighter drop-shadow-sm text-center">HAKI</h1>
+                                    <h2 className="text-2xl md:text-4xl font-bold text-indigo-700 mb-4 text-center">Misi Integritas</h2>
                                 </div>
-                                <h1 className="text-5xl md:text-8xl font-display font-black text-indigo-900 mb-2 tracking-tighter">HAKI</h1>
-                                <h2 className="text-2xl md:text-4xl font-bold text-indigo-600 mb-6">Misi Integritas</h2>
                                 
-                                <div className="bg-indigo-50 p-6 rounded-3xl mb-8 text-slate-700 text-lg leading-relaxed shadow-inner border border-indigo-100">
-                                    <p>
-                                        <strong>Panggilan untuk Agen!</strong> <br/>
+                                <div className="flex-1 flex flex-col items-start text-left space-y-6">
+                                    <p className="text-lg text-slate-800 font-medium leading-relaxed bg-white/50 p-6 rounded-2xl border border-white/60 shadow-sm">
+                                        <strong>Panggilan untuk Agen!</strong> <br/><br/>
                                         Dunia sedang dilanda badai <strong>korupsi, gratifikasi, dan suap-menyuap</strong>.
                                         Kekacauan terjadi di mana-mana. Kami membutuhkanmu!
                                         <br/><br/>
                                         Jadilah <strong>Pahlawan Integritas</strong>. Kuatkan nilai-nilai luhur dan sikap jujurmu untuk menyelamatkan masa depan.
-                                        Kamu akan dibekali satu <strong>Kartu Hero</strong> secara acak di awal. Tugasmu adalah melengkapinya dengan Nilai dan Sikap yang sesuai.
-                                        <br/><br/>
-                                        Siapkah kamu menjalankan misi ini?
+                                        <br/>Siapkah kamu menjalankan misi ini?
                                     </p>
-                                </div>
 
-                                <button onClick={() => setGameState('SETUP')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-12 rounded-2xl text-xl shadow-xl hover:scale-105 transition-all flex items-center gap-3 mx-auto">
-                                    MULAI MISI <ArrowRight size={28}/>
-                                </button>
+                                    <div className="flex flex-col gap-4 w-full">
+                                        <button onClick={() => setGameState('SETUP')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-3 w-full">
+                                            MULAI MISI <ArrowRight size={28}/>
+                                        </button>
+                                        <button onClick={() => setGameState('TUTORIAL')} className="bg-white hover:bg-indigo-50 text-indigo-600 font-bold py-4 px-8 rounded-2xl text-xl shadow-md border-2 border-indigo-100 hover:scale-105 transition-all flex items-center justify-center gap-3 w-full">
+                                            CARA BERMAIN <BookOpen size={24}/>
+                                        </button>
+                                    </div>
+
+                                    <div className="w-full border-t border-indigo-200/50 pt-4 text-center md:text-left">
+                                        <p className="text-xs font-bold text-indigo-800 uppercase tracking-widest mb-1">Ide Permainan oleh</p>
+                                        <p className="text-sm font-black text-indigo-900">Abdul Rahmat, S.Pd</p>
+                                        <p className="text-xs text-indigo-700 font-medium">SDN 011 Balikpapan Tengah</p>
+                                        <p className="text-[10px] text-indigo-600 mt-1">Kontak: 081351767574</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
 
+                    {gameState === 'TUTORIAL' && <TutorialScreen onBack={() => setGameState('INTRO')} />}
+
                     {gameState === 'SETUP' && (
                         <div className="h-full flex items-center justify-center p-4">
-                            <div className="bg-white/95 backdrop-blur p-8 rounded-[2rem] shadow-2xl max-w-xl w-full border-2 border-indigo-100 animate-bounce-in overflow-y-auto max-h-[90vh]">
+                            <div className="glass-panel p-8 rounded-[2rem] shadow-2xl max-w-xl w-full animate-bounce-in overflow-y-auto max-h-[90vh]">
                                 <h2 className="text-3xl font-black text-center text-indigo-900 mb-4 font-display">DATA AGEN</h2>
                                 
                                 <div className="mb-6">
-                                    <label className="block text-sm font-bold text-slate-500 mb-2 text-center uppercase tracking-wide">Jumlah Pemain</label>
+                                    <label className="block text-sm font-bold text-slate-600 mb-2 text-center uppercase tracking-wide">Jumlah Pemain</label>
                                     <div className="grid grid-cols-4 gap-2 mb-4">
                                         {[1, 2, 3, 4].map(n => (
                                             <button 
@@ -851,7 +1016,7 @@
                                 </div>
 
                                 <div className="space-y-3 mb-8">
-                                    <label className="block text-sm font-bold text-slate-500 text-center uppercase tracking-wide">Nama Pemain</label>
+                                    <label className="block text-sm font-bold text-slate-600 text-center uppercase tracking-wide">Nama Pemain</label>
                                     {Array.from({ length: playerCount }).map((_, i) => (
                                         <div key={i} className="flex items-center gap-2">
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${i===0?'bg-indigo-500':i===1?'bg-red-500':i===2?'bg-green-500':'bg-orange-500'}`}>{i+1}</div>
@@ -859,14 +1024,14 @@
                                                 type="text" 
                                                 value={playerNames[i]} 
                                                 onChange={(e) => handleNameChange(i, e.target.value)}
-                                                className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700"
+                                                className="w-full bg-white/80 border-2 border-indigo-100 rounded-xl px-4 py-2 font-bold text-slate-800 focus:bg-white"
                                             />
                                         </div>
                                     ))}
                                 </div>
                                 
                                 <button onClick={startGame} className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 text-xl transition-all">MULAI MAIN</button>
-                                <button onClick={() => setGameState('INTRO')} className="w-full text-slate-400 font-bold mt-4 text-sm">KEMBALI</button>
+                                <button onClick={() => setGameState('INTRO')} className="w-full text-slate-500 font-bold mt-4 text-sm hover:text-slate-700">KEMBALI</button>
                             </div>
                         </div>
                     )}
